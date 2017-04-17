@@ -34,6 +34,8 @@
 #include <list.h>
 #include <cctype>
 #include <genalg.h>
+#include <gheap.h>
+#include <gbsearch.h>
 
 class MovieMatch
 {
@@ -56,7 +58,7 @@ public:
     long    MovieDistance (const char * actor);
     void    ShowPath (std::ostream & os) const;
     void    ShowStar (Name name, std::ostream & os) const;
-    void    Hint (Name name, std::ostream & os) const;
+    void    Hint (Name name, std::ostream & os, size_t size) const;
     void    Dump (std::ostream & os) const;
     
 private:
@@ -66,6 +68,7 @@ private:
     
     Graph   g_; //the bipartite graph connecting actors with movies
     Vector  name_; //the vector mapping vertex numbers to names
+    Vector  hint_; //the hint vector used
     AA      vrtx_; //the associatve array mappint names to vertex numbers
     BFS     bfs_; //the breadth first survey
     
@@ -75,25 +78,27 @@ private:
 }; //end class MovieMatch
 
 //default constructor - only initial object is created
-MovieMatch::MovieMatch() : g_(), name_(), vrtx_(), bfs_(g_), baseActor_()
+MovieMatch::MovieMatch() : g_(), name_(), hint_(), vrtx_(), bfs_(g_), baseActor_()
 {}
 
 bool MovieMatch::Load (const char * filename)
 {
+    std::cout << " Loading database " << filename << " (first read) ...";
+    
     //read first line of file
     fsu::Vector<Name> inFileVector;
-    Vertex dummyVertexNum = 0;               //General purpose vertex
+    Vertex dummyVertexNum = 0;          //General purpose vertex
     Vertex vertexNum = 0;               //used to insert values
     bool isThere = 0;                   //Used to test presence in AA
     size_t movieCount = 0;
     size_t actorCount = 0;
+    size_t numBuckets = 100;            //used to optimize hash table load
     
     std::ifstream inFile(filename, std::ios::in);
     if (!inFile)
         return 0; //file failed to open
     inFile.seekg(0); //ensure pointer is at 0th byte of file
     
-    std::cout << " Loading database " << filename << " (first read) ...";
     
     //build AA and name Vector
     while (!(inFile.eof()))
@@ -120,6 +125,7 @@ bool MovieMatch::Load (const char * filename)
                 vrtx_[inFileVector[i]] = vertexNum; //adds name to AA with specified vertex number
                 
                 name_.PushBack(inFileVector[i]);    //adds name to vector
+                hint_.PushBack(inFileVector[i]);    //similar to name, but will be sorted in Init()
                // std::cout << "After loading into the AA, the vrtx_[" << inFileVector[i] << "] is " << vrtx_[inFileVector[i]] << "\n";
                 //std::cout << "The name that was just pushed onto the name_ vector is " << name_.Back() << "\n";
             
@@ -127,7 +133,16 @@ bool MovieMatch::Load (const char * filename)
                 ++vertexNum; //increments vertex number
             }
         }
+        
+        //HashTable optimization Note: "actorCount" is number of elements inserted into symbol tables
+        if (actorCount > (2*numBuckets))
+        {
+            numBuckets *= 4; //double size of hash table
+            vrtx_.Rehash(numBuckets);
+        }
     }
+    //final optimization of hash table
+    vrtx_.Rehash(actorCount);
     //fix actor count to subtract out movie Count
     actorCount -= movieCount;
     
@@ -135,9 +150,10 @@ bool MovieMatch::Load (const char * filename)
     inFile.clear(); //clear bad state after EOF
     inFile.seekg(0); //reposition pointer to beginning of file
     
+    std::cout << "(second read) ... ";
+    
     g_.SetVrtxSize(vrtx_.Size()); //sets number of graph vertices in the HashTable
     
-    std::cout << "(second read) ... ";
     
     while (!(inFile.eof()))
     {
@@ -153,6 +169,8 @@ bool MovieMatch::Load (const char * filename)
     
     std::cout << "done.\n ";
     std::cout << movieCount << " movies and " << actorCount << " actors read from " << filename;
+    
+    
     
     
     
@@ -174,6 +192,13 @@ bool MovieMatch::Load (const char * filename)
 //Initializes the BFS object with the actor as the start point
 bool MovieMatch::Init (const char * actor)
 {
+    fsu::LessThan<Name> pred_; //declares predicate object
+    fsu::g_heap_sort(hint_.Begin(),hint_.End(), pred_); //sorts the hint array
+    
+    std::cout << "\n\nHint Dump:\n\n";
+    hint_.Dump(std::cout);
+    std::cout << "\n\n\n";
+    
     //determine if the actor is in the database
     Vertex v;
     bool isHere = vrtx_.Retrieve(actor,v); //if successful, vertex number will be in v
@@ -214,7 +239,7 @@ long MovieMatch::MovieDistance(const char * actor)
 {
     //-3, -2, or -1 or actual movie distance
     Vertex v;
-    std::cout << "The actor to find is " << actor << "\n";
+    //std::cout << "The actor to find is " << actor << "\n";
     bool isHere = vrtx_.Retrieve(actor, v); //if successful, vertex number will be in v
     //std::cout << "The vertex retreived is " << v << " with name " << name_[v];
     if (!isHere)
@@ -232,7 +257,7 @@ long MovieMatch::MovieDistance(const char * actor)
     }
     else //the actor is reachable, compute distance and store path
     {
-        std::cout << "The vertex is: " << v;
+        //std::cout << "The vertex is: " << v;
         long movieDistance = bfs_.Distance()[v] / 2; //computed directly from bfs_'s distance vector
         //(bfs_.Distance()).Dump(std::cout);
         
@@ -294,9 +319,83 @@ void MovieMatch::ShowStar(Name name, std::ostream & os) const
 
 
 
-void MovieMatch::Hint (Name name, std::ostream & os) const
+void MovieMatch::Hint (Name name, std::ostream & os, size_t size = 6) const
 {
-    os << "\nThis is a placeholder.\n";
+    fsu::LessThan<Name> pred_;
+    size_t truncSize = size;
+    size_t nameSize = name.Size();
+    if (nameSize < size)
+        truncSize = nameSize;
+    
+    Name trunc; //creates string "trunc"
+    Name trunczz; //creates string "trunczz"
+    
+    char charString[truncSize+1]; //make room for null character
+    
+    for (size_t i = 0; i < truncSize; ++i)
+    {
+        charString[i] = name.Element(i);
+    }//adds characters to trunc
+    charString[truncSize] = '\0';
+    
+    trunc.Wrap(charString);
+    
+    std::cout << "Truc is : " << trunc << "\n";
+    
+    char charStringZ[truncSize+3]; //make room for zz plus null character
+    
+    for (size_t i = 0; i < (truncSize); ++i)
+    {
+        charStringZ[i] = name.Element(i);
+    }
+    charStringZ[truncSize] = 'z';
+    charStringZ[truncSize+1] = 'z';
+    charStringZ[truncSize+2] = '\0';
+    
+    trunczz.Wrap(charStringZ);
+    
+    std::cout << "Truczz is : " << trunczz << "\n";
+    
+    Vector::ConstIterator fullHintBegin = hint_.Begin();
+    std::cout << "fullHintBegin is: " << *fullHintBegin << "\n";
+    Vector::ConstIterator fullHintEnd   = hint_.End();
+    std::cout << "fullHintEnd is: " << *(--fullHintEnd) << "\n";
+    
+    Vector::ConstIterator hintBegin = fsu::g_lower_bound(fullHintBegin, fullHintEnd, trunc, pred_);
+    
+    std::cout << "HintBegin is : " << *hintBegin << "\n";
+    Vector::ConstIterator hintEnd   = fsu::g_upper_bound(fullHintBegin, fullHintEnd, trunczz, pred_);
+    std::cout << "HintEnd is : " << *hintEnd << "\n";
+    
+    
+    //move hintBegin iterator back by 2, if possible
+    for (size_t count = 0; count < 2; ++count)
+    {
+        if (hintBegin != fullHintBegin)
+            --hintBegin;
+    }
+    std::cout << "HintBegin is : " << *hintBegin << "\n";
+    
+    
+    
+    //move hintEnd iterator forward by 2, is possible
+    for (size_t count = 0; count < 2; ++count)
+    {
+        if (hintEnd != fullHintEnd)
+            ++hintEnd;
+    }
+    std::cout << "HintEnd is : " << *hintEnd << "\n";
+    
+    
+    
+    Vector::ConstIterator h;
+    for (h = hintBegin; h != hintEnd; ++h)
+    {
+        std::cout << *h << "\n";
+    }
+    
+    
+    
 }
 
 void MovieMatch::Dump (std::ostream & os) const

@@ -67,8 +67,6 @@ namespace fsu {
         void    ShowQueSetup    (std::ostream & os) const;
         void    ShowQue         (std::ostream & os) const;
         
-        
-        
     }; //end class BFSurvey
     
     

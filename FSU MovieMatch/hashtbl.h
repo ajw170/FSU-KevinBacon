@@ -79,7 +79,7 @@ namespace fsu
     ConstIterator  End           () const;
 
     // first ctor uses default hash object, second uses supplied hash object
-    explicit       HashTable     (size_t numBuckets = 10, bool prime = 1);
+    explicit       HashTable     (size_t numBuckets = 100, bool prime = 1);
     HashTable                    (size_t numBuckets, HashType hashObject, bool prime = 1);
                    ~HashTable    ();
     HashTable                    (const HashTable<K,D,H>&);
