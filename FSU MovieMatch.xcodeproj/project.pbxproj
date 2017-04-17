@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		98C40EA01EA2B53C00D06AF8 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 98C40E9F1EA2B53C00D06AF8 /* main.cpp */; };
+		984E82F31EA3C9EF0094E0B8 /* kb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 984E82EF1EA3C9EF0094E0B8 /* kb.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -23,8 +23,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		984E82EF1EA3C9EF0094E0B8 /* kb.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kb.cpp; sourceTree = "<group>"; };
+		984E82F01EA3C9EF0094E0B8 /* line.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = line.cpp; sourceTree = "<group>"; };
+		984E82F11EA3C9EF0094E0B8 /* movies_abbreviated.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = movies_abbreviated.txt; sourceTree = "<group>"; };
+		984E82F21EA3C9EF0094E0B8 /* movies.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = movies.txt; sourceTree = "<group>"; };
+		984E82F51EA3D3F50094E0B8 /* graph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = graph.h; sourceTree = "<group>"; };
+		984E82F61EA3D4070094E0B8 /* bfsurvey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bfsurvey.h; sourceTree = "<group>"; };
+		984E82F71EA3D4480094E0B8 /* hashtbl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hashtbl.h; sourceTree = "<group>"; };
+		984E82F81EA3DD4C0094E0B8 /* dfsurvey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dfsurvey.h; sourceTree = "<group>"; };
+		984E82F91EA425DE0094E0B8 /* movies_vshort.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = movies_vshort.txt; sourceTree = "<group>"; };
+		984E82FA1EA43D5A0094E0B8 /* movies_tiny.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = movies_tiny.txt; sourceTree = "<group>"; };
 		98C40E9C1EA2B53C00D06AF8 /* FSU MovieMatch */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "FSU MovieMatch"; sourceTree = BUILT_PRODUCTS_DIR; };
-		98C40E9F1EA2B53C00D06AF8 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		98C40EA61EA2B55700D06AF8 /* moviematch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = moviematch.h; sourceTree = "<group>"; };
+		98C40EA71EA2B59E00D06AF8 /* Support Files */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Support Files"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +52,7 @@
 		98C40E931EA2B53C00D06AF8 = {
 			isa = PBXGroup;
 			children = (
+				98C40EA71EA2B59E00D06AF8 /* Support Files */,
 				98C40E9E1EA2B53C00D06AF8 /* FSU MovieMatch */,
 				98C40E9D1EA2B53C00D06AF8 /* Products */,
 			);
@@ -57,7 +69,17 @@
 		98C40E9E1EA2B53C00D06AF8 /* FSU MovieMatch */ = {
 			isa = PBXGroup;
 			children = (
-				98C40E9F1EA2B53C00D06AF8 /* main.cpp */,
+				984E82F81EA3DD4C0094E0B8 /* dfsurvey.h */,
+				984E82F71EA3D4480094E0B8 /* hashtbl.h */,
+				984E82F61EA3D4070094E0B8 /* bfsurvey.h */,
+				984E82F51EA3D3F50094E0B8 /* graph.h */,
+				984E82EF1EA3C9EF0094E0B8 /* kb.cpp */,
+				984E82F01EA3C9EF0094E0B8 /* line.cpp */,
+				984E82FA1EA43D5A0094E0B8 /* movies_tiny.txt */,
+				984E82F91EA425DE0094E0B8 /* movies_vshort.txt */,
+				984E82F11EA3C9EF0094E0B8 /* movies_abbreviated.txt */,
+				984E82F21EA3C9EF0094E0B8 /* movies.txt */,
+				98C40EA61EA2B55700D06AF8 /* moviematch.h */,
 			);
 			path = "FSU MovieMatch";
 			sourceTree = "<group>";
@@ -119,7 +141,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				98C40EA01EA2B53C00D06AF8 /* main.cpp in Sources */,
+				984E82F31EA3C9EF0094E0B8 /* kb.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,6 +191,12 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CPLUSPLUSFLAGS = (
+					"-I$(PROJECT_DIR)",
+					"-I$(PROJECT_DIR)/Support\\ Files/CPP",
+					"-I$(PROJECT_DIR)/Support\\ Files/TCPP",
+					"-I$(PROJECT_DIR)/FSU\\ MovieMatch",
+				);
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -209,6 +237,12 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CPLUSPLUSFLAGS = (
+					"-I$(PROJECT_DIR)",
+					"-I$(PROJECT_DIR)/Support\\ Files/CPP",
+					"-I$(PROJECT_DIR)/Support\\ Files/TCPP",
+					"-I$(PROJECT_DIR)/FSU\\ MovieMatch",
+				);
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -246,6 +280,7 @@
 				98C40EA51EA2B53C00D06AF8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
