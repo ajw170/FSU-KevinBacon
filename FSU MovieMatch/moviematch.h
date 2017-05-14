@@ -37,6 +37,25 @@
 #include <gheap.h>
 #include <gbsearch.h>
 
+
+//class for sorting case insensitve strings
+class CaseInsensitiveLessThan
+{
+public:
+    bool operator () (const fsu::String& s1, const fsu::String& s2)
+    {
+        size_t i = 0;
+        for (i = 0; i < s1.Size() && i < s2.Size(); ++i)
+        {
+            if (tolower(s1[i]) < tolower(s2[i])) return 1;
+            if (tolower(s1[i]) > tolower(s2[i])) return 0;
+        }
+        if (s1.Size() < s2.Size()) return 1;
+        return 0;
+    }
+};
+
+//The main MovieMatch class
 class MovieMatch
 {
 public:
@@ -104,7 +123,6 @@ bool MovieMatch::Load (const char * filename)
     while (!(inFile.eof()))
     {
         Line(inFile, inFileVector); //reads line with movie and actor information
-        //inFileVector.Dump(std::cout);
         if (inFileVector.Size() > 0) //if it's not a blank line
             ++movieCount; //increment movie count (each line is a movie)
         
@@ -112,37 +130,28 @@ bool MovieMatch::Load (const char * filename)
         //loop through vector and attempt to insert names if they don't already exist
         for (size_t i = 0; i < inFileVector.Size(); ++i)
         {
-            //std::cout << "InFile Vector Read: " << inFileVector[i] << "\n";
-            
             isThere = vrtx_.Retrieve(inFileVector[i],dummyVertexNum); //checks presence of vertex name
-            //std::cout << "Was there? : " << isThere << "\n";
-            
-            
-            
             if (!isThere) //if vertex doesn't already exist
             {
-                //std::cout << "The vertex number is " << vertexNum << "\n";
                 vrtx_[inFileVector[i]] = vertexNum; //adds name to AA with specified vertex number
-                
                 name_.PushBack(inFileVector[i]);    //adds name to vector
                 hint_.PushBack(inFileVector[i]);    //similar to name, but will be sorted in Init()
-               // std::cout << "After loading into the AA, the vrtx_[" << inFileVector[i] << "] is " << vrtx_[inFileVector[i]] << "\n";
-                //std::cout << "The name that was just pushed onto the name_ vector is " << name_.Back() << "\n";
-            
                 ++actorCount;
                 ++vertexNum; //increments vertex number
             }
         }
         
         //HashTable optimization Note: "actorCount" is number of elements inserted into symbol tables
-        if (actorCount > (2*numBuckets))
+        if (actorCount > (2 * numBuckets))
         {
             numBuckets *= 4; //double size of hash table
             vrtx_.Rehash(numBuckets);
         }
     }
+    
     //final optimization of hash table
     vrtx_.Rehash(actorCount);
+    
     //fix actor count to subtract out movie Count
     actorCount -= movieCount;
     
@@ -153,7 +162,6 @@ bool MovieMatch::Load (const char * filename)
     std::cout << "(second read) ... ";
     
     g_.SetVrtxSize(vrtx_.Size()); //sets number of graph vertices in the HashTable
-    
     
     while (!(inFile.eof()))
     {
@@ -168,22 +176,7 @@ bool MovieMatch::Load (const char * filename)
     inFile.close();
     
     std::cout << "done.\n ";
-    std::cout << movieCount << " movies and " << actorCount << " actors read from " << filename;
-    
-    
-    
-    
-    
-    //std::cout << "Dumps of everything so far: \n\n";
-    
-   // name_.Dump(std::cout);
-   // vrtx_.Dump(std::cout);
-    
-    
-    
-    
-    
-    
+    std::cout << movieCount << " movies and " << actorCount << " actors read from " << filename << "\n";
     
     return 1; //successful
 }
@@ -192,17 +185,13 @@ bool MovieMatch::Load (const char * filename)
 //Initializes the BFS object with the actor as the start point
 bool MovieMatch::Init (const char * actor)
 {
-    fsu::LessThan<Name> pred_; //declares predicate object
+    CaseInsensitiveLessThan pred_; //declares predicate object
     fsu::g_heap_sort(hint_.Begin(),hint_.End(), pred_); //sorts the hint array
-    
-    std::cout << "\n\nHint Dump:\n\n";
-    hint_.Dump(std::cout);
-    std::cout << "\n\n\n";
     
     //determine if the actor is in the database
     Vertex v;
     bool isHere = vrtx_.Retrieve(actor,v); //if successful, vertex number will be in v
-    //std::cout << "Initialzied with actor " << actor << " and vertex pulled is " << v;
+
     if (!isHere)
     {
         std::cerr << " ** Init: " << actor << " is not in the database\n";
@@ -217,11 +206,8 @@ bool MovieMatch::Init (const char * actor)
     {
         baseActor_ = actor; //sets base actor in MM object
         bfs_.Reset(); //resets BFS object with up-do-date graph information
-        //std::cout << "Searching graph with vertex v = " << v << " whose name is " << name_[v];
-        //(bfs_.Color()).Dump(std::cout);
         bfs_.Search(v); //search graph with vertex v as base
-        //(bfs_.Parent()).Dump(std::cout);
-        //(bfs_.Color()).Dump(std::cout);
+
         return 1;
     }
 }
@@ -239,16 +225,14 @@ long MovieMatch::MovieDistance(const char * actor)
 {
     //-3, -2, or -1 or actual movie distance
     Vertex v;
-    //std::cout << "The actor to find is " << actor << "\n";
     bool isHere = vrtx_.Retrieve(actor, v); //if successful, vertex number will be in v
-    //std::cout << "The vertex retreived is " << v << " with name " << name_[v];
+
     if (!isHere)
     {
         return -3; //name is not in database
     }
     else if (bfs_.Color()[v] != 'b') //if the actor is unreachable from base
     {
-        //(bfs_.Color()).Dump(std::cout);
         return -2;
     }
     else if (isMovie(v))
@@ -257,11 +241,8 @@ long MovieMatch::MovieDistance(const char * actor)
     }
     else //the actor is reachable, compute distance and store path
     {
-        //std::cout << "The vertex is: " << v;
         long movieDistance = bfs_.Distance()[v] / 2; //computed directly from bfs_'s distance vector
-        //(bfs_.Distance()).Dump(std::cout);
-        
-        
+
         path_.Clear(); //clear any pre-existing path
         path_.PushBack(v); //push actor vertex onto path_
         
@@ -271,9 +252,7 @@ long MovieMatch::MovieDistance(const char * actor)
             path_.PushBack(bfs_.Parent()[v]);
             v = bfs_.Parent()[v];
         }
-        //std::cout << "The path vector is : \n";
-        //path_.Dump(std::cout);
-        
+
         return movieDistance;
     }
 }
@@ -281,11 +260,10 @@ long MovieMatch::MovieDistance(const char * actor)
 
 void MovieMatch::ShowPath(std::ostream & os) const
 {
-    List::ConstIterator i;
     size_t counter = 0;
-    i = path_.Begin();
-    //std::cout << "Begin vertex is: " << *i << " with name " << name_[*i];
     
+    List::ConstIterator i;
+    i = path_.Begin();
     
     os << "\n";
     for (i = path_.Begin(); i != path_.End(); ++i)
@@ -306,12 +284,21 @@ void MovieMatch::ShowStar(Name name, std::ostream & os) const
     Graph::AdjIterator i;
     Vertex v = vrtx_[name]; //determines vertex number of the star name; note: protected in const environment
     
+    Vector sortedStar;
+    for (i = g_.Begin(v); i != g_.End(v); ++i)
+    {
+        sortedStar.PushBack(name_[*i]); //push names onto list
+    }
+    
+    CaseInsensitiveLessThan pred_;
+    fsu::g_heap_sort(sortedStar.Begin(), sortedStar.End(), pred_); //sorts the vector
+    
     os << "\n ";
     os << name << "\n";
     
-    for (i = g_.Begin(v); i != g_.End(v); ++i)
+    for (Vector::ConstIterator i = sortedStar.Begin(); i != sortedStar.End(); ++i)
     {
-        os << "   | " << name_[*i] << "\n";
+        os << "   | " << *i << "\n";
     }
     
     os << "\n\n";
@@ -321,9 +308,10 @@ void MovieMatch::ShowStar(Name name, std::ostream & os) const
 
 void MovieMatch::Hint (Name name, std::ostream & os, size_t size = 6) const
 {
-    fsu::LessThan<Name> pred_;
+    CaseInsensitiveLessThan pred_;
     size_t truncSize = size;
     size_t nameSize = name.Size();
+    
     if (nameSize < size)
         truncSize = nameSize;
     
@@ -331,19 +319,15 @@ void MovieMatch::Hint (Name name, std::ostream & os, size_t size = 6) const
     Name trunczz; //creates string "trunczz"
     
     char charString[truncSize+1]; //make room for null character
-    
     for (size_t i = 0; i < truncSize; ++i)
     {
         charString[i] = name.Element(i);
-    }//adds characters to trunc
+    }
     charString[truncSize] = '\0';
-    
     trunc.Wrap(charString);
     
-    std::cout << "Truc is : " << trunc << "\n";
     
     char charStringZ[truncSize+3]; //make room for zz plus null character
-    
     for (size_t i = 0; i < (truncSize); ++i)
     {
         charStringZ[i] = name.Element(i);
@@ -351,22 +335,16 @@ void MovieMatch::Hint (Name name, std::ostream & os, size_t size = 6) const
     charStringZ[truncSize] = 'z';
     charStringZ[truncSize+1] = 'z';
     charStringZ[truncSize+2] = '\0';
-    
     trunczz.Wrap(charStringZ);
     
-    std::cout << "Truczz is : " << trunczz << "\n";
     
     Vector::ConstIterator fullHintBegin = hint_.Begin();
-    std::cout << "fullHintBegin is: " << *fullHintBegin << "\n";
     Vector::ConstIterator fullHintEnd   = hint_.End();
-    std::cout << "fullHintEnd is: " << *(--fullHintEnd) << "\n";
+    
     
     Vector::ConstIterator hintBegin = fsu::g_lower_bound(fullHintBegin, fullHintEnd, trunc, pred_);
-    
-    std::cout << "HintBegin is : " << *hintBegin << "\n";
     Vector::ConstIterator hintEnd   = fsu::g_upper_bound(fullHintBegin, fullHintEnd, trunczz, pred_);
-    std::cout << "HintEnd is : " << *hintEnd << "\n";
-    
+
     
     //move hintBegin iterator back by 2, if possible
     for (size_t count = 0; count < 2; ++count)
@@ -374,8 +352,6 @@ void MovieMatch::Hint (Name name, std::ostream & os, size_t size = 6) const
         if (hintBegin != fullHintBegin)
             --hintBegin;
     }
-    std::cout << "HintBegin is : " << *hintBegin << "\n";
-    
     
     
     //move hintEnd iterator forward by 2, is possible
@@ -384,8 +360,6 @@ void MovieMatch::Hint (Name name, std::ostream & os, size_t size = 6) const
         if (hintEnd != fullHintEnd)
             ++hintEnd;
     }
-    std::cout << "HintEnd is : " << *hintEnd << "\n";
-    
     
     
     Vector::ConstIterator h;
@@ -393,8 +367,6 @@ void MovieMatch::Hint (Name name, std::ostream & os, size_t size = 6) const
     {
         std::cout << *h << "\n";
     }
-    
-    
     
 }
 
