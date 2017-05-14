@@ -3,6 +3,8 @@
     Andrew J Wood
     COP4530
  
+    Final Revision
+ 
     Defines and implements the Kevin Bacon - "Six Degrees of Separation" game.
  
     The user will be able to determine any selected actor's Kevin Bacon number!
